@@ -1,4 +1,4 @@
-package slev
+package levenshtein
 
 import (
 	"math"
@@ -34,4 +34,73 @@ func SLev(w1 string, w2 string) int32 {
 		}
 	}
 	return currentRow[cols-1]
+}
+
+// Simple trie
+
+type Trie struct {
+	root *trieNode
+}
+
+type trieNode struct {
+	word     string
+	children map[rune]*trieNode
+}
+
+func NewTrie() *Trie {
+	t := new(Trie)
+	t.root = newTrieNode()
+	return t
+}
+func (t Trie) Insert(word string) {
+	t.root.insert(t.root, word)
+}
+
+func (t Trie) Search(word string, cost int32) {
+	results := make([]string, 0)
+	currentRow := make([]int32, 0)
+	for i := 0; i <= len(word); i++ {
+		currentRow = append(currentRow, i)
+	}
+
+	for k, v := range t.root.children {
+		searchRecursive(v, k, word, currentRow, results, cost)
+	}
+}
+
+func searchRecursive(node *trieNode, letter rune, word string, previousRow []int32, results []string, cost int32) {
+	columns := len(word) + 1
+	currentRow := make([]int32, 0)
+	currentRow = append(currentRow, previousRow[0]+1)
+
+	for c := 1, c < columns, c++ {
+		ic := currentRow[c - 1] + 1
+		dc := previousRow[c] + 1
+		var rc int32
+		if word[c - 1] != letter {
+			rc = previousRow[c - 1] + 1
+		} else {
+			rc = previousRow[ c - 1]
+		}
+		currentRow = append(currentRow, int32(math.Min(float64(ic), math.Min(float64(dc), float64(rc)))))
+	}
+	if currentRow[len(currentRow) - 1] <= cost && node.word != nil {
+		results = append(results, node.word)
+	}
+}
+
+func newTrieNode() *trieNode {
+	n := new(trieNode)
+	n.children = make(map[rune]*trieNode)
+	return n
+}
+
+func (t trieNode) insert(self *trieNode, word string) {
+	node := self
+	for _, l := range word {
+		if _, ok := t.children[l]; !ok {
+			node.children[l] = newTrieNode()
+		}
+	}
+	node.word = word
 }
